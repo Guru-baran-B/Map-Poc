@@ -1,0 +1,76 @@
+.close_button {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in;
+  background-color: #cccccc;
+}
+
+.close_button:hover {
+  transform: scale(1.1);
+  background-color: rgb(254, 56, 56);
+}
+
+.close_button:active {
+  transform: scale(1);
+  background-color: rgb(226, 60, 60);
+}
+
+.close_button::before,
+.close_button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 13px;
+  height: 2px;
+  background: white;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.close_button::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.iconOnly {
+  background-color: transparent;
+  width: 24px;
+  height: 24px;
+  align-self: flex-end;
+}
+
+.iconOnly.close_button:hover {
+  transform: none;
+  background-color: transparent;
+}
+
+.iconOnly.close_button:active {
+  transform: scale(0.9);
+  background-color: transparent;
+}
+
+.iconOnly.close_button::before,
+.iconOnly.close_button::after {
+  background: rgb(226, 60, 60);
+  width: 15px;
+  height: 2px;
+}
+
+.disabled.close_button::before,
+.disabled.close_button::after {
+  background: rgb(144, 144, 144);
+}
+
+.disabled.close_button:hover {
+  background-color: #cccccc;
+  transform: none;
+  cursor: default;
+}
+
+.iconOnly.disabled.close_button:hover {
+  background-color: transparent;
+}

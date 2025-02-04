@@ -1,0 +1,65 @@
+.checkBox {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  display: none;
+}
+
+svg {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  position: relative;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke: #676767;
+  stroke-width: 1;
+  transform: translate3d(0, 0, 0);
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.disabled:hover {
+  stroke: #c8ccd4;
+  background: rgba(34, 50, 84, 0.03);
+}
+
+svg path {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 0;
+}
+
+svg polyline {
+  stroke-dasharray: 22;
+  stroke-dashoffset: 66;
+}
+
+svg:hover {
+  stroke: #4285f4;
+  background: rgba(34, 50, 84, 0.03);
+}
+
+.disabled svg {
+  stroke: #c8ccd4;
+  cursor: default;
+  background: rgba(90, 90, 92, 0.063);
+}
+
+.input:checked + svg {
+  stroke: #4285f4;
+}
+
+.input:checked + svg path {
+  stroke-dashoffset: 60;
+  transition: all 0.3s linear;
+}
+
+.input:checked + svg polyline {
+  stroke-dashoffset: 42;
+  transition: all 0.2s linear;
+  transition-delay: 0.15s;
+}
