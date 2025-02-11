@@ -80,18 +80,21 @@ const Map = () => {
       onAdd: function(map, gl) {
         this.camera = new THREE.Camera();
         this.scene = new THREE.Scene();
-
         
-
-        // Stronger ambient light for overall brightness
-        const ambientLight = new THREE.AmbientLight(0xffffff,4);
+        // Add ambient light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 4.5); // Soft white light
         this.scene.add(ambientLight);
-
+        
+        // Add directional light
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 50); // White light
+        directionalLight.position.set(0, 10, 0); // Set the position of the light
+        this.scene.add(directionalLight); // Add the light to the scene
+        
         // Setup DRACO loader
         const dracoLoader = new DRACOLoader();
         dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
         
-        // Configure renderer for transparency
+        // Configure renderer for transparency and shadows
         this.renderer = new THREE.WebGLRenderer({
           canvas: map.getCanvas(),
           context: gl,
@@ -104,11 +107,31 @@ const Map = () => {
         this.renderer.physicallyCorrectLights = true;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 1;
+        this.renderer.shadowMap.enabled = true; // Enable shadow maps
+
+       
 
         // Load your 3D model with material modifications
         const loader = new GLTFLoader();
         loader.setDRACOLoader(dracoLoader);
         loader.load(glb, (gltf) => {
+          gltf.scene.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true; // Enable shadow casting for the model
+              child.receiveShadow = true; // Enable shadow receiving for the model
+              // Optionally adjust material properties for quality
+              child.material.metalness = 0; // Increase metalness for a shinier look
+              child.material.roughness = 0; // Decrease roughness for a smoother surface
+
+              // Check if the material is glass and set transparency
+              if (child.material.name === 'Glass') { // Adjust the condition based on your material naming
+                child.material.transparent = true; // Enable transparency
+                child.material.metalness = 1;
+                child.material.opacity = 0.5; // Set the desired opacity (0.0 to 1.0)
+                
+              }
+            }
+          });
       
           this.scene.add(gltf.scene);
         });
