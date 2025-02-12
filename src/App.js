@@ -13,23 +13,30 @@ const Map = () => {
   const mapRef = useRef(null);
   const [selectedMarker, setSelectedMarker] = useState(null);
 
+  const degreesToRadians = (degrees) => {
+    return degrees * (Math.PI / 180);
+  };
+
   const locations = [
-    { id: 1, lng: 55.231640, lat: 25.032975, title: "Location 1" },
-    { id: 2, lng: 55.231520, lat: 25.032960, title: "Location 2" },
-    { id: 3, lng: 55.231440, lat: 25.032945, title: "Location 3" },
-    { id: 4, lng: 55.231360, lat: 25.032930, title: "Location 4" },
+    // { id: 1, lng: 55.232262, lat: 25.032722, title: "Origin" },
+    // { id: 2, lng: 55.232154, lat: 25.033234, title: "Location 2" },
+    // { id: 3, lng: 55.231794, lat: 25.033036, title: "Location 3" },
+    // { id: 4, lng: 55.232050, lat: 25.032184, title: "Location 4" },
+    // { id: 4, lng: 55.232166, lat: 25.032069, title: "Location 4" },
+    // { id: 4, lng: 55.232742, lat: 25.032384, title: "Location 4" },
   ];
 
   useEffect(() => {
     mapboxgl.accessToken = "pk.eyJ1IjoiZ3VydWJhcmFuIiwiYSI6ImNtNjdqY3g3ZzAxcjkya3B0OXBrZzR6cG4ifQ.KS6Q4NhPYHB1t3bHSp7u9A";
 
+    
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: "mapbox://styles/mapbox/streets-v12",
-      center: [55.231522, 25.032862],
-      zoom: 18,
-      pitch: 64.9,
-      bearing: 172.5,
+      style: "mapbox://styles/mapbox/outdoors-v12",
+      center: [55.232262, 25.032722],
+      zoom: 19.2,
+      pitch: 70,
+      bearing: 30,
       antialias: true,
     });
 
@@ -53,9 +60,9 @@ const Map = () => {
     map.addControl(geocoder, "top-right");
 
     // Setup 3D model coordinates
-    const modelOrigin = [55.231522, 25.032862];
+    const modelOrigin = [55.232262, 25.032722];
     const modelAltitude = 0;
-    const modelRotate = [Math.PI / 2, 5, 0];
+    const modelRotate = [degreesToRadians(90), degreesToRadians(31.05), 0]; // Using the helper function
 
     const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(
       modelOrigin,
@@ -69,7 +76,7 @@ const Map = () => {
       rotateX: modelRotate[0],
       rotateY: modelRotate[1],
       rotateZ: modelRotate[2],
-      scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits() *0.75
+      scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits() 
     };
 
     // Create custom layer for 3D model
@@ -82,14 +89,25 @@ const Map = () => {
         this.scene = new THREE.Scene();
         
         // Add ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 4.5); // Soft white light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 5); // Soft white light
         this.scene.add(ambientLight);
         
-        // Add directional light
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 50); // White light
-        directionalLight.position.set(0, 10, 0); // Set the position of the light
-        this.scene.add(directionalLight); // Add the light to the scene
+        // Add directional light for shadows
+        const directionalLight = new THREE.DirectionalLight(0xffd700, 10); // Warm light color
+        directionalLight.position.set(-10, 15, -10); // Adjusted position to be above the surface
         
+        this.scene.add(directionalLight);
+
+        // Configure shadow properties
+        directionalLight.shadow.mapSize.width = 2048; // Increase shadow map size for better quality
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 0.5; // Adjust near plane
+        directionalLight.shadow.camera.far = 50; // Adjust far plane
+        directionalLight.shadow.camera.left = -10; // Adjust shadow camera bounds
+        directionalLight.shadow.camera.right = 10;
+        directionalLight.shadow.camera.top = 10;
+        directionalLight.shadow.camera.bottom = -10;
+
         // Setup DRACO loader
         const dracoLoader = new DRACOLoader();
         dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
@@ -108,8 +126,8 @@ const Map = () => {
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 1;
         this.renderer.shadowMap.enabled = true; // Enable shadow maps
-
-       
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Use soft shadows
+        this.renderer.shadowMap.size = 2048; // Increase size for better quality
 
         // Load your 3D model with material modifications
         const loader = new GLTFLoader();
@@ -117,8 +135,7 @@ const Map = () => {
         loader.load(glb, (gltf) => {
           gltf.scene.traverse((child) => {
             if (child.isMesh) {
-              child.castShadow = true; // Enable shadow casting for the model
-              child.receiveShadow = true; // Enable shadow receiving for the model
+             
               // Optionally adjust material properties for quality
               child.material.metalness = 0; // Increase metalness for a shinier look
               child.material.roughness = 0; // Decrease roughness for a smoother surface
@@ -128,7 +145,6 @@ const Map = () => {
                 child.material.transparent = true; // Enable transparency
                 child.material.metalness = 1;
                 child.material.opacity = 0.5; // Set the desired opacity (0.0 to 1.0)
-                
               }
             }
           });
@@ -175,13 +191,39 @@ const Map = () => {
       }
     };
 
-    map.on('style.load', () => {
+  
+
+    map.on('load', () => {
       // Add the custom layer
       map.addLayer(customLayer, 'waterway-label');
+      const layers = map.getStyle().layers;
+      const labelLayerId = layers.find(
+        (layer) => layer.type === "symbol" && layer.layout["text-field"]
+      )?.id;
+
+      // Ensure the 3D buildings layer is added before setting light
+      map.addLayer(
+        {
+          id: "3d-buildings",
+          source: "composite",
+          "source-layer": "building",
+          type: "fill-extrusion",
+          minzoom: 15,
+          paint: {
+            "fill-extrusion-color": "#aaa",
+            "fill-extrusion-height": ["get", "height"],
+            "fill-extrusion-base": ["get", "min_height"],
+            "fill-extrusion-opacity": 0.6,
+          },
+        },
+        labelLayerId
+      );
+
+      
 
       // Add markers
       const markers = {};
-      locations.forEach(location => {
+      locations?.forEach(location => {
         const popup = new mapboxgl.Popup({ 
           offset: 25,
           closeButton: true,
@@ -219,8 +261,15 @@ const Map = () => {
 
     mapRef.current = map;
 
+   
+
+   
+
+
     return () => map.remove();
   }, []);
+
+  
 
   const handleMarkerSelect = () => {
     
