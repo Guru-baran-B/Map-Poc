@@ -84,74 +84,84 @@ const Map = () => {
       id: '3d-model',
       type: 'custom',
       renderingMode: '3d',
-      onAdd: function(map, gl) {
-        this.camera = new THREE.Camera();
-        this.scene = new THREE.Scene();
-        
-        // Add ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 5); // Soft white light
-        this.scene.add(ambientLight);
-        
-        // Add directional light for shadows
-        const directionalLight = new THREE.DirectionalLight(0xffd700, 10); // Warm light color
-        directionalLight.position.set(-10, 15, -10); // Adjusted position to be above the surface
-        
-        this.scene.add(directionalLight);
+   onAdd: function(map, gl) {
+  this.camera = new THREE.Camera();
+  this.scene = new THREE.Scene();
+  
+  // Add ambient light
+  const ambientLight = new THREE.AmbientLight(0xffffff, 5); // Soft white light
+  this.scene.add(ambientLight);
+  
+  // Add directional light for shadows
+  const directionalLight = new THREE.DirectionalLight(0xffd700, 10); // Warm light color
+  directionalLight.position.set(-10, 15, -10); // Adjusted position to be above the surface
+  directionalLight.castShadow = true; // Enable shadow casting
+  this.scene.add(directionalLight);
 
-        // Configure shadow properties
-        directionalLight.shadow.mapSize.width = 2048; // Increase shadow map size for better quality
-        directionalLight.shadow.mapSize.height = 2048;
-        directionalLight.shadow.camera.near = 0.5; // Adjust near plane
-        directionalLight.shadow.camera.far = 50; // Adjust far plane
-        directionalLight.shadow.camera.left = -10; // Adjust shadow camera bounds
-        directionalLight.shadow.camera.right = 10;
-        directionalLight.shadow.camera.top = 10;
-        directionalLight.shadow.camera.bottom = -10;
+  // Configure shadow properties
+  directionalLight.shadow.mapSize.width = 2048; // Increase shadow map size for better quality
+  directionalLight.shadow.mapSize.height = 2048;
+  directionalLight.shadow.camera.near = 0.5; // Adjust near plane
+  directionalLight.shadow.camera.far = 50; // Adjust far plane
+  directionalLight.shadow.camera.left = -10; // Adjust shadow camera bounds
+  directionalLight.shadow.camera.right = 10;
+  directionalLight.shadow.camera.top = 10;
+  directionalLight.shadow.camera.bottom = -10;
 
-        // Setup DRACO loader
-        const dracoLoader = new DRACOLoader();
-        dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-        
-        // Configure renderer for transparency and shadows
-        this.renderer = new THREE.WebGLRenderer({
-          canvas: map.getCanvas(),
-          context: gl,
-          antialias: true,
-          alpha: true
-        });
-        
-        this.renderer.autoClear = false;
-        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-        this.renderer.physicallyCorrectLights = true;
-        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1;
-        this.renderer.shadowMap.enabled = true; // Enable shadow maps
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Use soft shadows
-        this.renderer.shadowMap.size = 2048; // Increase size for better quality
+  // Add a ground plane to receive shadows
+  const groundGeometry = new THREE.PlaneGeometry(100, 100);
+  const groundMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+  const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+  ground.rotation.x = -Math.PI / 2; // Rotate the plane to be horizontal
+  ground.receiveShadow = true; // Enable shadow receiving
+  this.scene.add(ground);
 
-        // Load your 3D model with material modifications
-        const loader = new GLTFLoader();
-        loader.setDRACOLoader(dracoLoader);
-        loader.load(glb, (gltf) => {
-          gltf.scene.traverse((child) => {
-            if (child.isMesh) {
-             
-              // Optionally adjust material properties for quality
-              child.material.metalness = 0; // Increase metalness for a shinier look
-              child.material.roughness = 0; // Decrease roughness for a smoother surface
+  // Setup DRACO loader
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+  
+  // Configure renderer for transparency and shadows
+  this.renderer = new THREE.WebGLRenderer({
+    canvas: map.getCanvas(),
+    context: gl,
+    antialias: true,
+    alpha: true
+  });
+  
+  this.renderer.autoClear = false;
+  this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+  this.renderer.physicallyCorrectLights = true;
+  this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  this.renderer.toneMappingExposure = 1;
+  this.renderer.shadowMap.enabled = true; // Enable shadow maps
+  this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Use soft shadows
+  this.renderer.shadowMap.size = 2048; // Increase size for better quality
 
-              // Check if the material is glass and set transparency
-              if (child.material.name === 'Glass') { // Adjust the condition based on your material naming
-                child.material.transparent = true; // Enable transparency
-                child.material.metalness = 1;
-                child.material.opacity = 0.5; // Set the desired opacity (0.0 to 1.0)
-              }
-            }
-          });
-      
-          this.scene.add(gltf.scene);
-        });
-      },
+  // Load your 3D model with material modifications
+  const loader = new GLTFLoader();
+  loader.setDRACOLoader(dracoLoader);
+  loader.load(glb, (gltf) => {
+    gltf.scene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true; // Enable shadow casting
+        child.receiveShadow = true; // Enable shadow receiving
+
+        // Optionally adjust material properties for quality
+        child.material.metalness = 0; // Increase metalness for a shinier look
+        child.material.roughness = 0; // Decrease roughness for a smoother surface
+
+        // Check if the material is glass and set transparency
+        if (child.material.name === 'Glass') { // Adjust the condition based on your material naming
+          child.material.transparent = true; // Enable transparency
+          child.material.metalness = 1;
+          child.material.opacity = 0.5; // Set the desired opacity (0.0 to 1.0)
+        }
+      }
+    });
+
+    this.scene.add(gltf.scene);
+  });
+},
       render: function(gl, matrix) {
         const rotationX = new THREE.Matrix4().makeRotationAxis(
           new THREE.Vector3(1, 0, 0),
