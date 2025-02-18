@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import glb from "../src/building.glb";
-import woodTexture from "../src/wood.png";
+
 
 const Map = () => {
   const mapContainerRef = useRef(null);
@@ -141,8 +141,7 @@ const Map = () => {
         const loader = new GLTFLoader();
         loader.setDRACOLoader(dracoLoader);
         loader.load(glb, (gltf) => {
-          const textureLoader = new THREE.TextureLoader();
-          const texture = textureLoader.load(woodTexture);
+       
 
           gltf.scene.traverse((child) => {
             if (child.isMesh) {
