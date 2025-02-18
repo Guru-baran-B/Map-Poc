@@ -1,12 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import React, { useEffect, useRef, useState } from "react";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import glb from "../src/building.glb";
+import woodTexture from "../src/wood.png";
 
 const Map = () => {
   const mapContainerRef = useRef(null);
@@ -27,9 +28,9 @@ const Map = () => {
   ];
 
   useEffect(() => {
-    mapboxgl.accessToken = "pk.eyJ1IjoiZ3VydWJhcmFuIiwiYSI6ImNtNjdqY3g3ZzAxcjkya3B0OXBrZzR6cG4ifQ.KS6Q4NhPYHB1t3bHSp7u9A";
+    mapboxgl.accessToken =
+      "pk.eyJ1IjoiZ3VydWJhcmFuIiwiYSI6ImNtNjdqY3g3ZzAxcjkya3B0OXBrZzR6cG4ifQ.KS6Q4NhPYHB1t3bHSp7u9A";
 
-    
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/outdoors-v12",
@@ -76,93 +77,109 @@ const Map = () => {
       rotateX: modelRotate[0],
       rotateY: modelRotate[1],
       rotateZ: modelRotate[2],
-      scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits() 
+      scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits(),
     };
 
     // Create custom layer for 3D model
     const customLayer = {
-      id: '3d-model',
-      type: 'custom',
-      renderingMode: '3d',
-   onAdd: function(map, gl) {
-  this.camera = new THREE.Camera();
-  this.scene = new THREE.Scene();
-  
-  // Add ambient light
-  const ambientLight = new THREE.AmbientLight(0xffffff, 5); // Soft white light
-  this.scene.add(ambientLight);
-  
-  // Add directional light for shadows
-  const directionalLight = new THREE.DirectionalLight(0xffd700, 10); // Warm light color
-  directionalLight.position.set(-10, 15, -10); // Adjusted position to be above the surface
-  directionalLight.castShadow = true; // Enable shadow casting
-  this.scene.add(directionalLight);
+      id: "3d-model",
+      type: "custom",
+      renderingMode: "3d",
+      onAdd: function (map, gl) {
+        this.camera = new THREE.Camera();
+        this.scene = new THREE.Scene();
 
-  // Configure shadow properties
-  directionalLight.shadow.mapSize.width = 2048; // Increase shadow map size for better quality
-  directionalLight.shadow.mapSize.height = 2048;
-  directionalLight.shadow.camera.near = 0.5; // Adjust near plane
-  directionalLight.shadow.camera.far = 50; // Adjust far plane
-  directionalLight.shadow.camera.left = -10; // Adjust shadow camera bounds
-  directionalLight.shadow.camera.right = 10;
-  directionalLight.shadow.camera.top = 10;
-  directionalLight.shadow.camera.bottom = -10;
+        // Add ambient light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 2); // Soft white light
+        this.scene.add(ambientLight);
 
-  // Add a ground plane to receive shadows
-  const groundGeometry = new THREE.PlaneGeometry(100, 100);
-  const groundMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc });
-  const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-  ground.rotation.x = -Math.PI / 2; // Rotate the plane to be horizontal
-  ground.receiveShadow = true; // Enable shadow receiving
-  this.scene.add(ground);
+        // Replace directional light with spotlight
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 9); // Increase intensity
+        directionalLight.position.set(-50, 40, -30); // Adjusted position to be above the surface
+        directionalLight.castShadow = true; // Enable shadow casting
+        this.scene.add(directionalLight);
 
-  // Setup DRACO loader
-  const dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-  
-  // Configure renderer for transparency and shadows
-  this.renderer = new THREE.WebGLRenderer({
-    canvas: map.getCanvas(),
-    context: gl,
-    antialias: true,
-    alpha: true
-  });
-  
-  this.renderer.autoClear = false;
-  this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-  this.renderer.physicallyCorrectLights = true;
-  this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  this.renderer.toneMappingExposure = 1;
-  this.renderer.shadowMap.enabled = true; // Enable shadow maps
-  this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Use soft shadows
-  this.renderer.shadowMap.size = 2048; // Increase size for better quality
+        // Shadow properties
+        directionalLight.shadow.mapSize.width = 4096; // Increase for better quality
+        directionalLight.shadow.mapSize.height = 4096; // Increase for better quality
+        directionalLight.shadow.bias = -0.005; // Adjust bias to reduce artifacts
+        directionalLight.shadow.camera.near = 0.5; // Adjust as needed
+        directionalLight.shadow.camera.far = 100; // Adjust as needed
 
-  // Load your 3D model with material modifications
-  const loader = new GLTFLoader();
-  loader.setDRACOLoader(dracoLoader);
-  loader.load(glb, (gltf) => {
-    gltf.scene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true; // Enable shadow casting
-        child.receiveShadow = true; // Enable shadow receiving
+        // Create a plane to receive shadows
+        const planeGeometry = new THREE.PlaneGeometry(1000, 1000); // Adjust size as needed
+        const planeMaterial = new THREE.ShadowMaterial({ opacity: 0.5 }); // Adjust opacity for shadow visibility
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.rotation.x = -Math.PI / 2; // Rotate to lay flat
+        plane.position.y = 0; // Adjust position to match the map
+        plane.receiveShadow = true; // Enable shadow receiving
+        this.scene.add(plane);
 
-        // Optionally adjust material properties for quality
-        child.material.metalness = 0; // Increase metalness for a shinier look
-        child.material.roughness = 0; // Decrease roughness for a smoother surface
+        // Setup DRACO loader
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath(
+          "https://www.gstatic.com/draco/versioned/decoders/1.5.6/"
+        );
 
-        // Check if the material is glass and set transparency
-        if (child.material.name === 'Glass') { // Adjust the condition based on your material naming
-          child.material.transparent = true; // Enable transparency
-          child.material.metalness = 1;
-          child.material.opacity = 0.5; // Set the desired opacity (0.0 to 1.0)
-        }
-      }
-    });
+        // Configure renderer for transparency and shadows
+        this.renderer = new THREE.WebGLRenderer({
+          canvas: map.getCanvas(),
+          context: gl,
+          antialias: true,
+          alpha: true,
+        });
 
-    this.scene.add(gltf.scene);
-  });
-},
-      render: function(gl, matrix) {
+        this.renderer.autoClear = false;
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        this.renderer.physicallyCorrectLights = true;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1;
+        this.renderer.shadowMap.enabled = true; // Enable shadow maps
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Use soft shadows
+
+        // Load your 3D model with material modifications
+        const loader = new GLTFLoader();
+        loader.setDRACOLoader(dracoLoader);
+        loader.load(glb, (gltf) => {
+          const textureLoader = new THREE.TextureLoader();
+          const texture = textureLoader.load(woodTexture);
+
+          gltf.scene.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true; // Enable shadow casting
+              child.receiveShadow = true; // Enable shadow receiving
+
+            
+
+              // Optionally adjust material properties for quality
+              child.material.metalness = 0; // Increase metalness for a shinier look
+              child.material.roughness = 0; // Decrease roughness for a smoother surface
+
+              // Check if the material is glass and set transparency
+              if (child.material.name === "Glass") {
+                // Adjust the condition based on your material naming
+                child.material.transparent = true; // Enable transparency
+                child.material.metalness = 1;
+                child.material.opacity = 0.3; // Set the desired opacity (0.0 to 1.0)
+              }
+            }
+          });
+
+          // gltf.scene.scale.set(1, 1, 1); // Adjust scale as needed
+          this.scene.add(gltf.scene);
+        });
+
+        directionalLight.shadow.camera.left = -100; // Adjust these values
+        directionalLight.shadow.camera.right = 100;
+        directionalLight.shadow.camera.top = 100;
+        directionalLight.shadow.camera.bottom = -100;
+        directionalLight.shadow.camera.near = 0.5; // Adjust as needed
+        directionalLight.shadow.camera.far = 100; // Adjust as needed
+        directionalLight.shadow.mapSize.width = 4096; // Increase for better quality
+        directionalLight.shadow.mapSize.height = 4096; // Increase for better quality
+        directionalLight.shadow.bias = -0.005; // Adjust as needed
+      },
+      render: function (gl, matrix) {
         const rotationX = new THREE.Matrix4().makeRotationAxis(
           new THREE.Vector3(1, 0, 0),
           modelTransform.rotateX
@@ -198,14 +215,12 @@ const Map = () => {
         this.renderer.resetState();
         this.renderer.render(this.scene, this.camera);
         map.triggerRepaint();
-      }
+      },
     };
 
-  
-
-    map.on('load', () => {
+    map.on("load", () => {
       // Add the custom layer
-      map.addLayer(customLayer, 'waterway-label');
+      map.addLayer(customLayer, "waterway-label");
       const layers = map.getStyle().layers;
       const labelLayerId = layers.find(
         (layer) => layer.type === "symbol" && layer.layout["text-field"]
@@ -229,25 +244,28 @@ const Map = () => {
         labelLayerId
       );
 
-      
-
       // Add markers
       const markers = {};
-      locations?.forEach(location => {
-        const popup = new mapboxgl.Popup({ 
+      locations?.forEach((location) => {
+        const popup = new mapboxgl.Popup({
           offset: 25,
           closeButton: true,
-          closeOnClick: false
-        })
-        .setHTML(`
+          closeOnClick: false,
+        }).setHTML(`
           <div style="font-family: Arial, sans-serif; padding: 16px;">
-            <h3 style="color: #334155; font-size: 16px; font-weight: 700; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 2px solid #3b82f6;">${location.title}</h3>
+            <h3 style="color: #334155; font-size: 16px; font-weight: 700; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 2px solid #3b82f6;">${
+              location.title
+            }</h3>
             <div style="background-color: #f8fafc; padding: 8px; border-radius: 4px; margin-top: 8px;">
               <p style="margin: 4px 0; font-size: 14px; color: #334155;">
-                <span style="font-weight: 700;">Latitude:</span> ${location.lat.toFixed(6)}
+                <span style="font-weight: 700;">Latitude:</span> ${location.lat.toFixed(
+                  6
+                )}
               </p>
               <p style="margin: 4px 0; font-size: 14px; color: #334155;">
-                <span style="font-weight: 700;">Longitude:</span> ${location.lng.toFixed(6)}
+                <span style="font-weight: 700;">Longitude:</span> ${location.lng.toFixed(
+                  6
+                )}
               </p>
             </div>
           </div>
@@ -259,9 +277,8 @@ const Map = () => {
           .addTo(map);
 
         marker._element.dataset.id = location.id;
-   
-        
-        marker.getElement().addEventListener('click', () => {
+
+        marker.getElement().addEventListener("click", () => {
           handleMarkerSelect(location.id);
         });
       });
@@ -271,22 +288,13 @@ const Map = () => {
 
     mapRef.current = map;
 
-   
-
-   
-
-
     return () => map.remove();
   }, []);
 
-  
-
-  const handleMarkerSelect = () => {
-    
-  };
+  const handleMarkerSelect = () => {};
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
+    <div style={{ display: "flex", height: "100vh" }}>
       {/* Sidebar */}
       {/* <div style={{ 
         width: '256px', 
@@ -326,7 +334,7 @@ const Map = () => {
 
       {/* Map Container */}
       <div style={{ flex: 1 }}>
-        <div ref={mapContainerRef} style={{ height: '100%' }}></div>
+        <div ref={mapContainerRef} style={{ height: "100%" }}></div>
       </div>
     </div>
   );
