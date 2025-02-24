@@ -155,7 +155,7 @@ const Map = () => {
               child.material.roughness = 0; // Decrease roughness for a smoother surface
 
               // Check if the material is glass and set transparency
-              if (child.material.name === "Glass") {
+              if (child.material.name == "Glass") {
                 // Adjust the condition based on your material naming
                 child.material.transparent = true; // Enable transparency
                 child.material.metalness = 1;
