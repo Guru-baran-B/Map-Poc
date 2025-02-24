@@ -8,6 +8,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import glb from "../src/building.glb";
 
+
 const Map = () => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -89,24 +90,30 @@ const Map = () => {
         this.scene = new THREE.Scene();
 
         // Add ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 4.5); // Soft white light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 2); // Soft white light
         this.scene.add(ambientLight);
 
-        // Add directional light for shadows
-        const directionalLight = new THREE.DirectionalLight(0xffd700, 10); // Warm light color
-        directionalLight.position.set(-10, 15, -10); // Adjusted position to be above the surface
-
+        // Replace directional light with spotlight
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 9); // Increase intensity
+        directionalLight.position.set(-50, 40, -30); // Adjusted position to be above the surface
+        directionalLight.castShadow = true; // Enable shadow casting
         this.scene.add(directionalLight);
 
-        // Configure shadow properties
-        directionalLight.shadow.mapSize.width = 2048; // Increase shadow map size for better quality
-        directionalLight.shadow.mapSize.height = 2048;
-        directionalLight.shadow.camera.near = 0.5; // Adjust near plane
-        directionalLight.shadow.camera.far = 50; // Adjust far plane
-        directionalLight.shadow.camera.left = -10; // Adjust shadow camera bounds
-        directionalLight.shadow.camera.right = 10;
-        directionalLight.shadow.camera.top = 10;
-        directionalLight.shadow.camera.bottom = -10;
+        // Shadow properties
+        directionalLight.shadow.mapSize.width = 4096; // Increase for better quality
+        directionalLight.shadow.mapSize.height = 4096; // Increase for better quality
+        directionalLight.shadow.bias = -0.005; // Adjust bias to reduce artifacts
+        directionalLight.shadow.camera.near = 0.5; // Adjust as needed
+        directionalLight.shadow.camera.far = 100; // Adjust as needed
+
+        // Create a plane to receive shadows
+        const planeGeometry = new THREE.PlaneGeometry(1000, 1000); // Adjust size as needed
+        const planeMaterial = new THREE.ShadowMaterial({ opacity: 0.5 }); // Adjust opacity for shadow visibility
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.rotation.x = -Math.PI / 2; // Rotate to lay flat
+        plane.position.y = 0; // Adjust position to match the map
+        plane.receiveShadow = true; // Enable shadow receiving
+        this.scene.add(plane);
 
         // Setup DRACO loader
         const dracoLoader = new DRACOLoader();
@@ -129,14 +136,20 @@ const Map = () => {
         this.renderer.toneMappingExposure = 1;
         this.renderer.shadowMap.enabled = true; // Enable shadow maps
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Use soft shadows
-        this.renderer.shadowMap.size = 2048; // Increase size for better quality
 
         // Load your 3D model with material modifications
         const loader = new GLTFLoader();
         loader.setDRACOLoader(dracoLoader);
         loader.load(glb, (gltf) => {
+       
+
           gltf.scene.traverse((child) => {
             if (child.isMesh) {
+              child.castShadow = true; // Enable shadow casting
+              child.receiveShadow = true; // Enable shadow receiving
+
+            
+
               // Optionally adjust material properties for quality
               child.material.metalness = 0; // Increase metalness for a shinier look
               child.material.roughness = 0; // Decrease roughness for a smoother surface
@@ -146,13 +159,24 @@ const Map = () => {
                 // Adjust the condition based on your material naming
                 child.material.transparent = true; // Enable transparency
                 child.material.metalness = 1;
-                child.material.opacity = 0.5; // Set the desired opacity (0.0 to 1.0)
+                child.material.opacity = 0.3; // Set the desired opacity (0.0 to 1.0)
               }
             }
           });
 
+          // gltf.scene.scale.set(1, 1, 1); // Adjust scale as needed
           this.scene.add(gltf.scene);
         });
+
+        directionalLight.shadow.camera.left = -100; // Adjust these values
+        directionalLight.shadow.camera.right = 100;
+        directionalLight.shadow.camera.top = 100;
+        directionalLight.shadow.camera.bottom = -100;
+        directionalLight.shadow.camera.near = 0.5; // Adjust as needed
+        directionalLight.shadow.camera.far = 100; // Adjust as needed
+        directionalLight.shadow.mapSize.width = 4096; // Increase for better quality
+        directionalLight.shadow.mapSize.height = 4096; // Increase for better quality
+        directionalLight.shadow.bias = -0.005; // Adjust as needed
       },
       render: function (gl, matrix) {
         const rotationX = new THREE.Matrix4().makeRotationAxis(
@@ -260,7 +284,7 @@ const Map = () => {
 
       map.markers = markers;
     });
-https://chatgpt.com/c/67a44820-1508-800e-9cb8-f2bfd2701a8a
+
     mapRef.current = map;
 
     return () => map.remove();
