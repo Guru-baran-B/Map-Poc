@@ -71,10 +71,8 @@ export const load3DModel = (map: mapboxgl.Map, modelTransform: ModelTransform) =
       this.renderer = new THREE.WebGLRenderer({
         canvas: map.getCanvas(),
         context: gl,
-        antialias: false,
+        antialias: true,
         alpha: false,
-        powerPreference: 'high-performance',
-        precision: 'mediump'
       });
       this.renderer.autoClear = false;
       
