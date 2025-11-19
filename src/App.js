@@ -161,6 +161,7 @@ import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import planDay2 from './Plan_Day2.png';
+import './App.css';
 
 const MapboxExample = () => {
   const mapContainerRef = useRef();
@@ -209,6 +210,20 @@ const MapboxExample = () => {
           'raster-fade-duration': 0,
           'raster-emissive-strength': 1
         }
+      });
+
+      const markers = [
+        { lng: 54.3558, lat: 24.4824, title: 'Marker 2' },
+        { lng: 54.3578, lat: 24.4834, title: 'Marker 3' },
+        { lng: 54.3567, lat: 24.4815, title: 'Marker 4' }
+      ];
+
+      markers.forEach(markerInfo => {
+        new mapboxgl.Marker()
+          .setLngLat([markerInfo.lng, markerInfo.lat])
+          .setPopup(new mapboxgl.Popup({ offset: 25 })
+          .setHTML(`<h1>${markerInfo.title}</h1>`))
+          .addTo(mapRef.current);
       });
     });
   }, []);
